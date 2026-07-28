@@ -6,7 +6,7 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 from dither import floyd_steinberg
 from image_processor import load_portrait
@@ -109,23 +109,12 @@ def banner_defs(theme: Theme) -> str:
     .leader {{ fill: {theme.muted}; font-size: 13px; letter-spacing: 1.2px; }}
     .badge {{ fill: {theme.background}; stroke: {theme.border}; }}
     .glow {{ fill: url(#{theme.name}-glow); }}
-    .dot {{ opacity: 0; animation: dotIn 1.1s ease-out forwards; transform-origin: center; }}
     .logo {{ opacity: 0; animation: morph 14s cubic-bezier(.4,0,.2,1) infinite; transform-origin: center; }}
     .logo-portrait {{ animation-delay: 0s; }}
     .logo-flutter {{ animation-delay: 3.5s; }}
     .logo-code {{ animation-delay: 7s; }}
     .logo-developer {{ animation-delay: 10.5s; }}
-    .portrait-glow {{ animation: breathe 7s ease-in-out infinite; }}
     .cursor {{ animation: cursor 1.05s steps(1) infinite; }}
-    @keyframes dotIn {{
-      from {{ opacity: 0; transform: translateY(5px) scale(0.82); }}
-      34% {{ opacity: 0.9; }}
-      to {{ opacity: 1; transform: translateY(0) scale(1); }}
-    }}
-    @keyframes breathe {{
-      0%, 100% {{ transform: scale(1); }}
-      50% {{ transform: scale(1.01); }}
-    }}
     @keyframes morph {{
       0%, 14% {{ opacity: 0; transform: translateY(6px) scale(0.94); }}
       18%, 32% {{ opacity: 1; transform: translateY(0) scale(1); }}
@@ -170,7 +159,7 @@ def banner_body(theme: Theme, portrait: Image.Image) -> str:
 <text x="46" y="114" class="mono meta" transform="rotate(-90 46 114)">VISUAL MAP</text>
   <g clip-path="url(#{theme.name}-portrait-clip)">
   <rect x="28" y="68" width="404" height="334" rx="20" fill="{theme.name == 'dark' and '#0B0E15' or '#EEF2F7'}" />
-  <g class="portrait-glow">{portrait_svg}</g>
+  {portrait_svg}
   <text x="42" y="74" class="mono meta" transform="rotate(-90 42 74)">VISUAL MAP</text>
 </g>
 <text x="44" y="422" class="mono meta">SCANLINE 100%</text>
@@ -201,34 +190,47 @@ def banner_body(theme: Theme, portrait: Image.Image) -> str:
 
 
 def portrait_layers(portrait: Image.Image, theme: Theme) -> str:
-    subject = portrait.convert("RGBA").resize((300, 340), Image.Resampling.LANCZOS)
+    width, height = 300, 340
+    subject = portrait.convert("RGBA").resize((width, height), Image.Resampling.LANCZOS)
     alpha = subject.getchannel("A")
     rgb = Image.new("RGB", subject.size, "#FFFFFF" if theme.name == "light" else "#0B0E15")
     rgb.paste(subject.convert("RGB"), mask=alpha)
-    dithered = floyd_steinberg(rgb)
+
+    gray = rgb.convert("L")
+    gray = ImageOps.autocontrast(gray, cutoff=1)
+    gray = gray.filter(ImageFilter.UnsharpMask(radius=3, percent=140))
+    gray = ImageEnhance.Contrast(gray).enhance(1.3)
+
+    dithered = floyd_steinberg(gray)
     pixels = dithered.load()
     alpha_pixels = alpha.load()
 
     fill = theme.secondary if theme.name == "dark" else theme.primary
-    strokes = []
-    step = 6
-    for y in range(0, 340, step):
-        for x in range(0, 300, step):
-            if alpha_pixels[x, y] < 20:
-                continue
-            darkness = 255 - pixels[x, y]
-            if darkness < 70:
-                continue
-            radius = 0.9 + (darkness / 255) * 1.9
-            cx = 44 + x + step / 2
-            cy = 96 + y + step / 2
-            delay = ((x * 17 + y * 13) % 1600) + 60
-            opacity = 0.25 + (darkness / 255) * 0.72
-            strokes.append(
-                f'<circle class="dot" cx="{cx:.1f}" cy="{cy:.1f}" r="{radius:.2f}" '
-                f'fill="{fill}" style="animation-delay:{delay}ms; opacity:{opacity:.2f}" />'
-            )
-    return "".join(strokes)
+    ox, oy = 44, 96
+
+    # Every dark pixel of the full-resolution dither becomes part of a run —
+    # tone comes purely from dot density/spacing, not per-dot size, matching
+    # a real halftone. Consecutive dark pixels in a row collapse into a
+    # single rect so the SVG stays a handful of KB instead of one element
+    # per pixel (~100k of them at this resolution). Each run is its own
+    # <rect> rather than a subpath merged into one giant <path> — Chromium's
+    # SVG rasterizer miscomputes fill on a many-thousand-subpath single path
+    # at this canvas size (verified: the identical geometry as separate
+    # rects renders correctly, as one merged path it inverts light/dark).
+    rects = []
+    for y in range(height):
+        x = 0
+        while x < width:
+            if alpha_pixels[x, y] >= 20 and pixels[x, y] == 0:
+                run_start = x
+                while x < width and alpha_pixels[x, y] >= 20 and pixels[x, y] == 0:
+                    x += 1
+                x1, x2, y1 = ox + run_start, ox + x, oy + y
+                rects.append(f'<rect x="{x1}" y="{y1}" width="{x2 - x1}" height="1.1"/>')
+            else:
+                x += 1
+
+    return f'<g fill="{fill}" opacity="0.92">{"".join(rects)}</g>'
 
 
 def morph_layers(theme: Theme) -> str:
