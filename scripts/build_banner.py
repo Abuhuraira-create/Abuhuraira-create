@@ -86,7 +86,7 @@ def main() -> int:
 
 def build_banner(theme: Theme, portrait: Image.Image) -> str:
     portrait_svg = portrait_layers(portrait, theme)
-    center_svg = morph_layers(portrait, theme)
+    center_svg = morph_layers(theme)
 
     return f"""<svg width="1180" height="610" viewBox="0 0 1180 610" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Abu Huraira Ahmed profile banner">
 <defs>
@@ -159,9 +159,10 @@ def build_banner(theme: Theme, portrait: Image.Image) -> str:
 <rect x="28" y="80" width="404" height="360" rx="14" class="panel" />
 <rect x="28" y="80" width="404" height="360" rx="14" class="glow" />
 <text x="46" y="114" class="mono meta" transform="rotate(-90 46 114)">VISUAL MAP</text>
-<g clip-path="url(#{theme.name}-portrait-clip)">
+  <g clip-path="url(#{theme.name}-portrait-clip)">
   <rect x="28" y="38" width="404" height="384" rx="20" fill="{theme.name == 'dark' and '#0B0E15' or '#EEF2F7'}" />
   <g class="portrait-glow">{portrait_svg}</g>
+  <text x="42" y="74" class="mono meta" transform="rotate(-90 42 74)">VISUAL MAP</text>
 </g>
 <text x="44" y="422" class="mono meta">SCANLINE 100%</text>
 
@@ -192,72 +193,42 @@ def build_banner(theme: Theme, portrait: Image.Image) -> str:
 
 
 def portrait_layers(portrait: Image.Image, theme: Theme) -> str:
-    rgba = portrait.convert("RGBA").resize((300, 340), Image.Resampling.LANCZOS)
-    alpha = rgba.getchannel("A")
-    base = Image.new("RGB", rgba.size, "#ffffff" if theme.name == "light" else "#0B0E15")
-    base.paste(rgba.convert("RGB"), mask=alpha)
-    dithered = floyd_steinberg(base)
+    subject = portrait.convert("RGBA").resize((300, 340), Image.Resampling.LANCZOS)
+    alpha = subject.getchannel("A")
+    rgb = Image.new("RGB", subject.size, "#FFFFFF" if theme.name == "light" else "#0B0E15")
+    rgb.paste(subject.convert("RGB"), mask=alpha)
+    dithered = floyd_steinberg(rgb)
     pixels = dithered.load()
     alpha_pixels = alpha.load()
-    width, height = dithered.size
 
-    parts: list[str] = []
-    for y in range(height):
-        x = 0
-        while x < width:
-            if alpha_pixels[x, y] > 12 and pixels[x, y] < 128:
-                start = x
-                while x < width and alpha_pixels[x, y] > 12 and pixels[x, y] < 128:
-                    x += 1
-                run = x - start
-                delay = ((start * 19 + y * 11) % 1200) + 80
-                hue = theme.secondary if theme.name == "dark" else theme.primary
-                parts.append(
-                    f'<path class="dot" style="animation-delay:{delay}ms" '
-                    f'd="M{start + 44} {y + 96}h{run}v1h-{run}z" fill="{hue}" opacity="0.88" />'
-                )
-            x += 1
-    return "".join(parts)
-
-
-def center_portrait_layers(portrait: Image.Image, theme: Theme) -> str:
-    rgba = portrait.convert("RGBA").resize((300, 340), Image.Resampling.LANCZOS)
-    alpha = rgba.getchannel("A")
-    base = Image.new("RGB", rgba.size, "#ffffff" if theme.name == "light" else "#0B0E15")
-    base.paste(rgba.convert("RGB"), mask=alpha)
-    dithered = floyd_steinberg(base)
-    pixels = dithered.load()
-    alpha_pixels = alpha.load()
-    width, height = dithered.size
-
-    parts: list[str] = []
-    for y in range(height):
-        x = 0
-        while x < width:
-            if alpha_pixels[x, y] > 12 and pixels[x, y] < 128:
-                start = x
-                while x < width and alpha_pixels[x, y] > 12 and pixels[x, y] < 128:
-                    x += 1
-                run = x - start
-                delay = ((start * 13 + y * 9) % 1200) + 60
-                hue = theme.secondary if theme.name == "dark" else theme.primary
-                parts.append(
-                    f'<path class="logo logo-portrait" style="animation-delay:{delay}ms" '
-                    f'd="M{start / 2.35 + 6:.2f} {y / 2.35 + 6:.2f}h{max(0.8, run / 2.35):.2f}v0.8h-{max(0.8, run / 2.35):.2f}z" '
-                    f'fill="{hue}" opacity="0.9" />'
-                )
-            x += 1
-    return "".join(parts)
+    fill = theme.secondary if theme.name == "dark" else theme.primary
+    strokes = []
+    step = 6
+    for y in range(0, 340, step):
+        for x in range(0, 300, step):
+            if alpha_pixels[x, y] < 20:
+                continue
+            darkness = 255 - pixels[x, y]
+            if darkness < 70:
+                continue
+            radius = 0.9 + (darkness / 255) * 1.9
+            cx = 44 + x + step / 2
+            cy = 96 + y + step / 2
+            delay = ((x * 17 + y * 13) % 1600) + 60
+            opacity = 0.25 + (darkness / 255) * 0.72
+            strokes.append(
+                f'<circle class="dot" cx="{cx:.1f}" cy="{cy:.1f}" r="{radius:.2f}" '
+                f'fill="{fill}" style="animation-delay:{delay}ms; opacity:{opacity:.2f}" />'
+            )
+    return "".join(strokes)
 
 
-def morph_layers(portrait: Image.Image, theme: Theme) -> str:
-    portrait_svg = center_portrait_layers(portrait, theme)
+def morph_layers(theme: Theme) -> str:
     flutter_svg = logo_markup(FLUTTER, theme.primary)
     code_svg = logo_markup(CODE, theme.secondary)
     dev_svg = logo_markup(DEVELOPER, theme.accent)
     return f"""
       <g transform="translate(0 0)">
-        <g class="logo logo-portrait">{portrait_svg}</g>
         <g class="logo logo-flutter">{flutter_svg}</g>
         <g class="logo logo-code">{code_svg}</g>
         <g class="logo logo-developer">{dev_svg}</g>
