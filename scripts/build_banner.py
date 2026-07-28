@@ -84,12 +84,8 @@ def main() -> int:
     return 0
 
 
-def build_banner(theme: Theme, portrait: Image.Image) -> str:
-    portrait_svg = portrait_layers(portrait, theme)
-    center_svg = morph_layers(theme)
-
-    return f"""<svg width="1180" height="610" viewBox="0 0 1180 610" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Abu Huraira Ahmed profile banner">
-<defs>
+def banner_defs(theme: Theme) -> str:
+    return f"""<defs>
   <linearGradient id="{theme.name}-bg" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0%" stop-color="{theme.background}" />
     <stop offset="100%" stop-color="{theme.panel}" />
@@ -99,7 +95,7 @@ def build_banner(theme: Theme, portrait: Image.Image) -> str:
     <stop offset="48%" stop-color="{theme.primary}" stop-opacity="0.08" />
     <stop offset="100%" stop-color="{theme.background}" stop-opacity="0" />
   </radialGradient>
-  <clipPath id="{theme.name}-portrait-clip"><rect x="28" y="38" width="404" height="384" rx="20" /></clipPath>
+  <clipPath id="{theme.name}-portrait-clip"><rect x="28" y="68" width="404" height="354" rx="20" /></clipPath>
   <clipPath id="{theme.name}-center-clip"><rect x="498" y="90" width="210" height="240" rx="18" /></clipPath>
   <style>
     .mono {{ font-family: "JetBrains Mono", "IBM Plex Mono", monospace; }}
@@ -141,13 +137,27 @@ def build_banner(theme: Theme, portrait: Image.Image) -> str:
       50%, 100% {{ opacity: 0; }}
     }}
   </style>
-</defs>
+</defs>"""
+
+
+def build_banner(theme: Theme, portrait: Image.Image) -> str:
+    body = banner_body(theme, portrait)
+
+    return f"""<svg width="1180" height="610" viewBox="0 0 1180 610" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Abu Huraira Ahmed profile banner">
+{banner_defs(theme)}
 
 <rect width="1180" height="610" rx="20" class="frame" />
 <rect x="18" y="18" width="1144" height="574" rx="14" fill="{theme.background}" stroke="{theme.border}" />
 <rect x="28" y="28" width="1124" height="554" rx="12" fill="{theme.background}" stroke="{theme.border}" />
+{body}
+</svg>"""
 
-<rect x="28" y="28" width="1124" height="40" rx="12" fill="{theme.shell}" stroke="{theme.border}" />
+
+def banner_body(theme: Theme, portrait: Image.Image) -> str:
+    portrait_svg = portrait_layers(portrait, theme)
+    center_svg = morph_layers(theme)
+
+    return f"""<rect x="28" y="28" width="1124" height="40" rx="12" fill="{theme.shell}" stroke="{theme.border}" />
 <circle cx="52" cy="48" r="5" fill="{theme.danger}" />
 <circle cx="70" cy="48" r="5" fill="{theme.accent}" />
 <circle cx="88" cy="48" r="5" fill="{theme.primary}" />
@@ -160,7 +170,7 @@ def build_banner(theme: Theme, portrait: Image.Image) -> str:
 <rect x="28" y="80" width="404" height="360" rx="14" class="glow" />
 <text x="46" y="114" class="mono meta" transform="rotate(-90 46 114)">VISUAL MAP</text>
   <g clip-path="url(#{theme.name}-portrait-clip)">
-  <rect x="28" y="38" width="404" height="384" rx="20" fill="{theme.name == 'dark' and '#0B0E15' or '#EEF2F7'}" />
+  <rect x="28" y="68" width="404" height="354" rx="20" fill="{theme.name == 'dark' and '#0B0E15' or '#EEF2F7'}" />
   <g class="portrait-glow">{portrait_svg}</g>
   <text x="42" y="74" class="mono meta" transform="rotate(-90 42 74)">VISUAL MAP</text>
 </g>
@@ -188,8 +198,7 @@ def build_banner(theme: Theme, portrait: Image.Image) -> str:
 <text x="48" y="491" class="mono value">$ whoami</text>
 <text x="154" y="491" class="mono label">developer // problem solver // continuous learner</text>
 <text x="944" y="491" class="mono label">Uptime:</text>
-<text x="1020" y="491" class="mono value" fill="{theme.accent}">24/7</text>
-</svg>"""
+<text x="1020" y="491" class="mono value" fill="{theme.accent}">24/7</text>"""
 
 
 def portrait_layers(portrait: Image.Image, theme: Theme) -> str:
@@ -247,7 +256,7 @@ def system_rows(theme: Theme) -> str:
         ("toolchain", "VS Code • Git • Android Studio • Figma"),
         ("languages", "Dart"),
         ("framework", "Flutter"),
-        ("currently", "Crafting scalable & delightful apps"),
+        ("currently", "Crafting scalable &amp; delightful apps"),
     ]
 
     lines = []
