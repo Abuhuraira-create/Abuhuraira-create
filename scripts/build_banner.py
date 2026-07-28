@@ -80,7 +80,6 @@ def main() -> int:
     (output / "dark.svg").write_text(optimize(build_banner(DARK, portrait)), encoding="utf-8")
     (output / "light.svg").write_text(optimize(build_banner(LIGHT, portrait)), encoding="utf-8")
     build_preview(output / "preview.png")
-    generate_snake_assets(output)
     return 0
 
 
@@ -95,7 +94,7 @@ def banner_defs(theme: Theme) -> str:
     <stop offset="48%" stop-color="{theme.primary}" stop-opacity="0.08" />
     <stop offset="100%" stop-color="{theme.background}" stop-opacity="0" />
   </radialGradient>
-  <clipPath id="{theme.name}-portrait-clip"><rect x="28" y="68" width="404" height="354" rx="20" /></clipPath>
+  <clipPath id="{theme.name}-portrait-clip"><rect x="28" y="68" width="404" height="334" rx="20" /></clipPath>
   <clipPath id="{theme.name}-center-clip"><rect x="498" y="90" width="210" height="240" rx="18" /></clipPath>
   <style>
     .mono {{ font-family: "JetBrains Mono", "IBM Plex Mono", monospace; }}
@@ -170,7 +169,7 @@ def banner_body(theme: Theme, portrait: Image.Image) -> str:
 <rect x="28" y="80" width="404" height="360" rx="14" class="glow" />
 <text x="46" y="114" class="mono meta" transform="rotate(-90 46 114)">VISUAL MAP</text>
   <g clip-path="url(#{theme.name}-portrait-clip)">
-  <rect x="28" y="68" width="404" height="354" rx="20" fill="{theme.name == 'dark' and '#0B0E15' or '#EEF2F7'}" />
+  <rect x="28" y="68" width="404" height="334" rx="20" fill="{theme.name == 'dark' and '#0B0E15' or '#EEF2F7'}" />
   <g class="portrait-glow">{portrait_svg}</g>
   <text x="42" y="74" class="mono meta" transform="rotate(-90 42 74)">VISUAL MAP</text>
 </g>
@@ -327,14 +326,6 @@ def write_logo_assets(output: Path) -> None:
     (output / "assets" / "flutter.svg").write_text(logo_svg(FLUTTER, "#22D3EE"), encoding="utf-8")
     (output / "assets" / "code.svg").write_text(logo_svg(CODE, "#8B5CF6"), encoding="utf-8")
     (output / "assets" / "developer.svg").write_text(logo_svg(DEVELOPER, "#10B981"), encoding="utf-8")
-
-
-def generate_snake_assets(output: Path) -> None:
-    snake_dark = """<svg width="1180" height="140" viewBox="0 0 1180 140" xmlns="http://www.w3.org/2000/svg"><rect width="1180" height="140" rx="22" fill="#090B10" stroke="#1C2333"/><path d="M80 96c36-60 112-60 148 0s112 60 148 0 112-60 148 0 112 60 148 0 112-60 148 0" fill="none" stroke="#22D3EE" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><g fill="#1C2333"><rect x="80" y="34" width="26" height="26" rx="6"/><rect x="124" y="28" width="26" height="26" rx="6"/><rect x="168" y="34" width="26" height="26" rx="6"/><rect x="212" y="46" width="26" height="26" rx="6"/><rect x="256" y="58" width="26" height="26" rx="6"/><rect x="300" y="52" width="26" height="26" rx="6"/><rect x="344" y="40" width="26" height="26" rx="6"/><rect x="388" y="34" width="26" height="26" rx="6"/><rect x="432" y="46" width="26" height="26" rx="6"/><rect x="476" y="58" width="26" height="26" rx="6"/><rect x="520" y="52" width="26" height="26" rx="6"/><rect x="564" y="40" width="26" height="26" rx="6"/><rect x="608" y="34" width="26" height="26" rx="6"/><rect x="652" y="46" width="26" height="26" rx="6"/><rect x="696" y="58" width="26" height="26" rx="6"/><rect x="740" y="52" width="26" height="26" rx="6"/><rect x="784" y="40" width="26" height="26" rx="6"/><rect x="828" y="34" width="26" height="26" rx="6"/><rect x="872" y="46" width="26" height="26" rx="6"/><rect x="916" y="58" width="26" height="26" rx="6"/><rect x="960" y="52" width="26" height="26" rx="6"/></g></svg>"""
-    snake_light = """<svg width="1180" height="140" viewBox="0 0 1180 140" xmlns="http://www.w3.org/2000/svg"><rect width="1180" height="140" rx="22" fill="#F8FAFC" stroke="#CBD5E1"/><path d="M80 96c36-60 112-60 148 0s112 60 148 0 112-60 148 0 112 60 148 0 112-60 148 0" fill="none" stroke="#8B5CF6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><g fill="#CBD5E1"><rect x="80" y="34" width="26" height="26" rx="6"/><rect x="124" y="28" width="26" height="26" rx="6"/><rect x="168" y="34" width="26" height="26" rx="6"/><rect x="212" y="46" width="26" height="26" rx="6"/><rect x="256" y="58" width="26" height="26" rx="6"/><rect x="300" y="52" width="26" height="26" rx="6"/><rect x="344" y="40" width="26" height="26" rx="6"/><rect x="388" y="34" width="26" height="26" rx="6"/><rect x="432" y="46" width="26" height="26" rx="6"/><rect x="476" y="58" width="26" height="26" rx="6"/><rect x="520" y="52" width="26" height="26" rx="6"/><rect x="564" y="40" width="26" height="26" rx="6"/><rect x="608" y="34" width="26" height="26" rx="6"/><rect x="652" y="46" width="26" height="26" rx="6"/><rect x="696" y="58" width="26" height="26" rx="6"/><rect x="740" y="52" width="26" height="26" rx="6"/><rect x="784" y="40" width="26" height="26" rx="6"/><rect x="828" y="34" width="26" height="26" rx="6"/><rect x="872" y="46" width="26" height="26" rx="6"/><rect x="916" y="58" width="26" height="26" rx="6"/><rect x="960" y="52" width="26" height="26" rx="6"/></g></svg>"""
-    (output / "assets").mkdir(exist_ok=True)
-    (output / "assets" / "snake-dark.svg").write_text(optimize(snake_dark), encoding="utf-8")
-    (output / "assets" / "snake-light.svg").write_text(optimize(snake_light), encoding="utf-8")
 
 
 if __name__ == "__main__":

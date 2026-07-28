@@ -225,14 +225,70 @@ def connect_card(x: int, y: int, w: int, h: int, theme: Theme) -> str:
 
 
 TECH = [
-    ("Flutter", "22D3EE", None),
-    ("Dart", "0175C2", "Dt"),
-    ("Git", "F05032", "Git"),
-    ("GitHub", "6E7681", "GH"),
-    ("Android Studio", "3DDC84", "AS"),
-    ("Figma", "A259FF", "Fg"),
-    ("VS Code", "007ACC", "VS"),
+    ("Flutter", "22D3EE"),
+    ("Dart", "0175C2"),
+    ("Git", "F05032"),
+    ("GitHub", "9198A1"),
+    ("Android Studio", "3DDC84"),
+    ("Figma", "A259FF"),
+    ("VS Code", "007ACC"),
 ]
+
+
+def _icon_dart(cx: float, cy: float, color: str) -> str:
+    return (
+        f'<polygon points="{cx - 13},{cy + 7} {cx + 1},{cy - 13} {cx + 15},{cy - 1} {cx + 1},{cy + 15}" fill="{color}" />'
+        f'<polygon points="{cx + 1},{cy - 13} {cx + 15},{cy - 1} {cx + 1},{cy + 15}" fill="{color}" opacity="0.55" />'
+    )
+
+
+def _icon_git(cx: float, cy: float, color: str) -> str:
+    return (
+        f'<line x1="{cx - 8:.1f}" y1="{cy + 8:.1f}" x2="{cx + 8:.1f}" y2="{cy - 8:.1f}" stroke="{color}" stroke-width="2.4" />'
+        f'<polygon points="{cx - 8},{cy} {cx},{cy - 8} {cx + 8},{cy} {cx},{cy + 8}" fill="{color}" />'
+        f'<circle cx="{cx + 11:.1f}" cy="{cy - 11:.1f}" r="4" fill="none" stroke="{color}" stroke-width="2.2" />'
+    )
+
+
+def _icon_github(cx: float, cy: float, color: str) -> str:
+    return (
+        f'<circle cx="{cx}" cy="{cy + 1}" r="11" fill="{color}" />'
+        f'<polygon points="{cx - 11},{cy - 4} {cx - 4},{cy - 4} {cx - 9},{cy - 13}" fill="{color}" />'
+        f'<polygon points="{cx + 11},{cy - 4} {cx + 4},{cy - 4} {cx + 9},{cy - 13}" fill="{color}" />'
+        f'<circle cx="{cx - 4.5:.1f}" cy="{cy}" r="1.6" fill="#0B0E15" />'
+        f'<circle cx="{cx + 4.5:.1f}" cy="{cy}" r="1.6" fill="#0B0E15" />'
+    )
+
+
+def _icon_android_studio(cx: float, cy: float, color: str) -> str:
+    return (
+        f'<polygon points="{cx},{cy - 13} {cx - 13},{cy + 11} {cx + 13},{cy + 11}" fill="{color}" />'
+        f'<polygon points="{cx},{cy - 2} {cx - 7},{cy + 11} {cx + 7},{cy + 11}" fill="#0B0E15" opacity="0.35" />'
+    )
+
+
+def _icon_figma(cx: float, cy: float, color: str) -> str:
+    return (
+        f'<circle cx="{cx}" cy="{cy - 7}" r="6" fill="#F24E1E" />'
+        f'<circle cx="{cx - 7:.1f}" cy="{cy + 5}" r="6" fill="#A259FF" />'
+        f'<circle cx="{cx + 7:.1f}" cy="{cy + 5}" r="6" fill="#1ABCFE" />'
+    )
+
+
+def _icon_vscode(cx: float, cy: float, color: str) -> str:
+    return (
+        f'<polygon points="{cx - 9},{cy - 13} {cx + 12},{cy} {cx - 9},{cy + 13} {cx - 3},{cy + 13} {cx + 15},{cy} {cx - 3},{cy - 13}" fill="{color}" />'
+    )
+
+
+TECH_ICONS = {
+    "Dart": _icon_dart,
+    "Git": _icon_git,
+    "GitHub": _icon_github,
+    "Android Studio": _icon_android_studio,
+    "Figma": _icon_figma,
+    "VS Code": _icon_vscode,
+}
 
 
 def techstack_card(x: int, y: int, w: int, h: int, theme: Theme) -> str:
@@ -242,12 +298,13 @@ def techstack_card(x: int, y: int, w: int, h: int, theme: Theme) -> str:
     tx = x + 20
     ty = y + h - 20 - tile
     tiles = []
-    for name, color, glyph in TECH:
+    for name, color in TECH:
         tiles.append(f'<rect x="{tx:.1f}" y="{ty}" width="{tile}" height="{tile}" rx="14" fill="{theme.panel}" stroke="#{color}" stroke-width="2" />')
+        cx, cy = tx + tile / 2, ty + tile / 2
         if name == "Flutter":
             tiles.append(f'<g transform="translate({tx + 13:.1f} {ty + 13:.1f}) scale(0.25)">{logo_group_markup(FLUTTER, "#" + color)}</g>')
         else:
-            tiles.append(f'<text x="{tx + tile / 2:.1f}" y="{ty + tile / 2 + 5}" text-anchor="middle" class="mono value" style="font-size:13px" fill="#{color}">{glyph}</text>')
+            tiles.append(TECH_ICONS[name](cx, cy, "#" + color))
         tiles.append(f'<text x="{tx + tile / 2:.1f}" y="{ty + tile + 16}" text-anchor="middle" class="mono meta" style="font-size:9px">{name}</text>')
         tx += tile + gap
     return f"""{_panel(x, y, w, h, theme, "Tech Stack", "&#128736; ")}

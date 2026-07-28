@@ -28,39 +28,24 @@ def load_portrait(source: str | Path, size: tuple[int, int] = (300, 340)) -> Ima
 
 
 def _remove_background(image: Image.Image) -> Image.Image:
-    """Remove the background with GrabCut and light cleanup."""
+    """Remove a flat studio background via colour-distance thresholding.
+
+    GrabCut was tried first but proved unreliable on flat-backdrop portraits:
+    it tends to lump a large uniformly-coloured garment (e.g. a dark sweater)
+    in with the background instead of the subject. A colour-distance mask
+    against the sampled backdrop colour is far more robust for exactly the
+    flat/uniform backgrounds this pipeline expects.
+    """
 
     rgb = np.array(image)
-    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-    h, w = bgr.shape[:2]
-
-    mask = np.zeros((h, w), np.uint8)
-    rect = (
-        int(w * 0.08),
-        int(h * 0.04),
-        int(w * 0.84),
-        int(h * 0.90),
-    )
-
-    bgd_model = np.zeros((1, 65), np.float64)
-    fgd_model = np.zeros((1, 65), np.float64)
-    try:
-        cv2.grabCut(bgr, mask, rect, bgd_model, fgd_model, 6, cv2.GC_INIT_WITH_RECT)
-        alpha = np.where((mask == cv2.GC_FGD) | (mask == cv2.GC_PR_FGD), 255, 0).astype("uint8")
-    except cv2.error:
-        alpha = _heuristic_alpha(rgb)
-
-    alpha = cv2.GaussianBlur(alpha, (7, 7), 0)
-    _, alpha = cv2.threshold(alpha, 24, 255, cv2.THRESH_BINARY)
-    alpha = cv2.morphologyEx(alpha, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8), iterations=2)
-
+    alpha = _heuristic_alpha(rgb)
     rgba = cv2.cvtColor(rgb, cv2.COLOR_RGB2RGBA)
     rgba[:, :, 3] = alpha
     return Image.fromarray(rgba, "RGBA")
 
 
 def _heuristic_alpha(rgb: np.ndarray) -> np.ndarray:
-    """Fallback alpha mask for environments where GrabCut struggles."""
+    """Colour-distance alpha mask with hole-filling and largest-component keep."""
 
     h, w = rgb.shape[:2]
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
@@ -76,6 +61,14 @@ def _heuristic_alpha(rgb: np.ndarray) -> np.ndarray:
     diff = np.linalg.norm(rgb.astype("float32") - bg.astype("float32"), axis=2)
     alpha = np.where((diff > 22) | (gray < 178), 255, 0).astype("uint8")
     alpha = cv2.morphologyEx(alpha, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8), iterations=2)
+    alpha = cv2.morphologyEx(alpha, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8), iterations=1)
+
+    contours, _ = cv2.findContours(alpha, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if contours:
+        largest = max(contours, key=cv2.contourArea)
+        filled = np.zeros_like(alpha)
+        cv2.drawContours(filled, [largest], -1, 255, thickness=cv2.FILLED)
+        alpha = filled
     return alpha
 
 
