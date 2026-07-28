@@ -1,0 +1,12 @@
+<svg width="520" height="72" viewBox="0 0 520 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Typing animation">
+  <style>
+    text { font: 700 20px "JetBrains Mono", "IBM Plex Mono", monospace; fill: #FFFFFF; }
+    .muted { fill: #94A3B8; font-weight: 500; }
+    .caret { animation: blink 1.1s steps(1) infinite; fill: #22D3EE; }
+    @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+  </style>
+  <rect x="0" y="0" width="520" height="72" rx="18" fill="#10141D" stroke="#1C2333"/>
+  <text x="24" y="31">Flutter Developer</text>
+  <text x="24" y="54" class="muted">Building polished apps with Dart, Firebase, and clean motion.</text>
+  <rect x="476" y="23" width="12" height="24" rx="4" class="caret"/>
+</svg>
